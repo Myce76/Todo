@@ -29,6 +29,12 @@ namespace Todo.API
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            using (var scope = app.Services.CreateAsyncScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<TodoContext>();
+                dbContext.Database.EnsureDeletedAsync();
+                dbContext.Database.EnsureCreatedAsync();
+            }
 
             app.UseHttpsRedirection();
 
