@@ -13,7 +13,7 @@ namespace Todo.Infrastructure.Persistence
         {
 
         }
-        
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultContainer("Store");
@@ -21,9 +21,12 @@ namespace Todo.Infrastructure.Persistence
             modelBuilder.Entity<TodoItem>()
                 .ToContainer("Todos");
 
-            modelBuilder.Entity<TodoItem>()
-                .Property(x => x.Status)
-                .HasConversion(new EnumToStringConverter<ItemStatus>());
+            modelBuilder.Entity<TodoItem>(entity =>
+            { 
+                entity.HasKey(e => e.Id);
+                entity.Property(x => x.Status)
+                      .HasConversion(new EnumToStringConverter<ItemStatus>());
+            });
         }
     }
 }
