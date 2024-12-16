@@ -5,11 +5,10 @@ namespace Todo.Application.Interfaces
 {
     public interface ITodoRepository
     {
-        Task<TodoItem> Add(TodoItem entity);
-        Task<TodoItem> Update(TodoItem entity);
-        Task Delete(Guid entityId);
-        Task<IEnumerable<TodoItem>> GetAll(string? description, ItemStatus? status, int? pageNumber);
-        Task<TodoItem?> GetById(Guid entityId);
-        Task<bool> IsExists(Guid entityId);
+        Task<TodoItem> AddAsync(TodoItem entity);
+        Task<TodoItem?> UpdateAsync(string entityId, TodoItem entity);
+        Task DeleteAsync(string entityId);
+        Task<IEnumerable<TodoItem>> GetAllAsync(string? GetAllAsync);
+        Task<TodoItem?> GetByIdAsync(string entityId);
     }
 }

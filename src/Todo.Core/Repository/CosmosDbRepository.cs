@@ -1,4 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
+
+using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
 
 using Todo.Application.Interfaces;
 using Todo.Domain.Entities;
@@ -8,68 +12,57 @@ namespace Todo.Core.Repository;
 
 public class CosmosDbRepository : ITodoRepository
 {
-    //The context is added in Step 5.1
-    private readonly TodoContext _context;
-    private const int PageSize = 25;
+    private readonly Container _container;
 
-    public CosmosDbRepository(TodoContext context)
+    public CosmosDbRepository(CosmosClient cosmosDbClient, string databaseName, string containerName)
     {
-        _context = context;
+        _container = cosmosDbClient.GetContainer(databaseName, containerName);
     }
 
-    public async Task<TodoItem> Add(TodoItem entity)
+    public async Task<TodoItem> AddAsync(TodoItem entity)
     {
-        var addedEntity = (await _context.Todos.AddAsync(entity)).Entity;
-        await _context.SaveChangesAsync();
-        return addedEntity;
+        var item = await _container.CreateItemAsync(entity, new PartitionKey(entity.Id));
+        return item.Resource;
     }
 
-    public async Task Delete(Guid entityId)
+    public async Task DeleteAsync(string id)
     {
-        var entity = await _context.Todos.FindAsync(entityId);
-        if (entity != null)
-            _context.Remove(entity);
-        await _context.SaveChangesAsync();
+        await _container.DeleteItemAsync<TodoItem>(id, new PartitionKey(id));
     }
 
-    public async Task<IEnumerable<TodoItem>> GetAll(string? description, ItemStatus? status, int? pageNumber)
+    public async Task<IEnumerable<TodoItem>> GetAllAsync(string? queryString)
     {
-        IQueryable<TodoItem> query = _context.Todos.OrderBy(x => x.Id);
-
-        if (string.IsNullOrEmpty(description) != true)
+        var query = _container.GetItemQueryIterator<TodoItem>(new QueryDefinition(queryString));
+        var results = new List<TodoItem>();
+        while (query.HasMoreResults)
         {
-            query = query.Where(x => x.Description.Contains(description));
+            var response = await query.ReadNextAsync();
+            results.AddRange(response.ToList());
         }
+        return results;
 
-        if (status.HasValue)
+    }
+
+    public async Task<TodoItem?> GetByIdAsync(string entityId)
+    {
+        try
         {
-            query = query.Where(x => x.Status == status.Value);
+            var response = await _container.ReadItemAsync<TodoItem>(entityId, new PartitionKey(entityId));
+            return response.Resource;
         }
-
-        if (pageNumber.HasValue)
+        catch (CosmosException) //For handling item not found and other exceptions
         {
-            query = query.Skip((pageNumber.Value-1)*PageSize);
+            return null;
         }
-
-        query = query.Take(PageSize);
-        
-        return await query.ToListAsync();
     }
 
-    public async Task<TodoItem?> GetById(Guid entityId)
+    public async Task<TodoItem?> UpdateAsync(string entityId, TodoItem entity)
     {
-        return await _context.Todos.FindAsync(entityId);
+        var item = await _container.UpsertItemAsync(entity, new PartitionKey(entityId));
+        if (item != null)
+        {
+            return item.Resource;
+        }
+        return null;
     }
-
-    public async Task<TodoItem> Update(TodoItem entity)
-    {
-        var updatedEntity = _context.Todos.Update(entity).Entity;
-        await _context.SaveChangesAsync();
-        return updatedEntity;
-    }
-
-    public async Task<bool> IsExists(Guid id)
-    {
-        return await _context.Todos.AnyAsync(e => e.Id == id);
-    }
-}
+ }
