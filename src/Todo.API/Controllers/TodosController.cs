@@ -63,7 +63,7 @@ public class TodosController : ControllerBase, ITodoApiController
     /// <param name="description"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<TodoItemDTO>> Create(string description)
+    public async Task<ActionResult<TodoItemDTO>> Create([FromRoute] string description)
     {
         var entity = await _repository.AddAsync(new TodoItem(description));
         var dto = entity.ToDTO();
