@@ -19,11 +19,16 @@ namespace Todo.Infrastructure.Persistence
             modelBuilder.HasDefaultContainer("Store");
 
             modelBuilder.Entity<TodoItem>()
-                .ToContainer("Todos");
+                        .ToContainer("Todos");
+            
+            modelBuilder.Entity<TodoItem>()
+                        .HasPartitionKey(o => o.Id);
 
             modelBuilder.Entity<TodoItem>(entity =>
             { 
-                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id);
+                entity.Property(e => e.CreatedDate);
+                entity.Property(e => e.Description);
                 entity.Property(x => x.Status)
                       .HasConversion(new EnumToStringConverter<ItemStatus>());
             });

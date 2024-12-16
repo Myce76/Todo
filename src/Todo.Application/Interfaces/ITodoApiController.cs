@@ -1,40 +1,42 @@
-﻿using Todo.Application.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
+
+using Todo.Application.DTOs;
 using Todo.Domain.Entities;
 
 namespace Todo.Application.Interfaces;
-public interface IApiController<T> where T : BaseEntity
+public interface ITodoApiController
 {
     /// <summary>
     /// Get all entities with filtering
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public Task<IEnumerable<T>>? GetAll(GetRequest<T>? request);
+    public Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAll(FilterDTO request);
 
     /// <summary>
     /// Get one item by id
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public Task<T>? Get(string id);
+    public Task<ActionResult<TodoItemDTO>> Get(Guid id);
 
     /// <summary>
     /// Create an item
     /// </summary>
     /// <param name="entity"></param>
     /// <returns></returns>
-    public Task<T> Post(T entity);
+    public Task<ActionResult<TodoItemDTO>> Create(string description);
 
     /// <summary>
     /// Modify an existing item
     /// </summary>
     /// <param name="entity"></param>
     /// <returns></returns>
-    public Task<T>? Put(T entity);
+    public Task<ActionResult<TodoItemDTO>> Update(Guid id, TodoItemDTO dto);
 
     /// <summary>
     /// Delete an item
     /// </summary>
     /// <param name="id"></param>
-    public void Delete(string id);
+    public Task<ActionResult> Delete(Guid id);
 }

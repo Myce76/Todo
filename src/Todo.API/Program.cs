@@ -1,6 +1,10 @@
 
+using System.Text.Json.Serialization;
+
 using Microsoft.EntityFrameworkCore;
 
+using Todo.Application.Interfaces;
+using Todo.Core.Repository;
 using Todo.Infrastructure.Persistence;
 
 namespace Todo.API
@@ -13,9 +17,22 @@ namespace Todo.API
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                            .AddJsonOptions(options =>
+                            {
+                                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                            });
+            //builder.Services.AddDbContext<TodoContext>(options =>
+            //                                           options.UseCosmos(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+            //                                           "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+            //                                           "TodosDB"));
             builder.Services.AddDbContext<TodoContext>(options =>
-                    options.UseCosmos(builder.Configuration.GetConnectionString("DefaultConnection"), "TodosDB"));
+                                                       options.UseCosmos(
+                                                       "https://localhost:8081",
+                                                       "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+                                                       "TodosDB"));
+
+            builder.Services.AddScoped<ITodoRepository, CosmosDbRepository>();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -29,9 +46,9 @@ namespace Todo.API
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            using (var scope = app.Services.CreateAsyncScope())
+            using (var scopeAsync = app.Services.CreateAsyncScope())
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<TodoContext>();
+                var dbContext = scopeAsync.ServiceProvider.GetRequiredService<TodoContext>();
                 dbContext.Database.EnsureDeletedAsync();
                 dbContext.Database.EnsureCreatedAsync();
             }
