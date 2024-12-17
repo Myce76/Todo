@@ -1,11 +1,9 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 using Todo.Application.DTOs;
 using Todo.Application.Extensions;
 using Todo.Application.Interfaces;
-using Todo.Core.Repository;
 using Todo.Domain.Entities;
 
 namespace Todo.API.Controllers;
@@ -63,7 +61,7 @@ public class TodosController : ControllerBase, ITodoApiController
     /// <param name="description"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<TodoItemDTO>> Create([FromRoute] string description)
+    public async Task<ActionResult<TodoItemDTO>> Create([FromBody] string description)
     {
         var entity = await _repository.AddAsync(new TodoItem(description));
         var dto = entity.ToDTO();

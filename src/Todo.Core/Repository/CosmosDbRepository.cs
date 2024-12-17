@@ -1,12 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Cosmos;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Azure.Cosmos;
 
 using Todo.Application.Interfaces;
 using Todo.Domain.Entities;
-using Todo.Infrastructure.Persistence;
 
 namespace Todo.Core.Repository;
 
