@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 using Todo.Application.DTOs;
 using Todo.Domain.Entities;
@@ -11,7 +12,7 @@ public interface ITodoApiController
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    public Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAll(FilterDTO request);
+    public Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAll(string? description, ItemStatus? status, uint? pageNumber);
 
     /// <summary>
     /// Get one item by id

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Todo.Application.DTOs;
 using Todo.Application.Extensions;
 using Todo.Application.Interfaces;
+using Todo.Core.Repository;
 using Todo.Domain.Entities;
 
 namespace Todo.API.Controllers;
@@ -14,10 +15,11 @@ namespace Todo.API.Controllers;
 public class TodosController : ControllerBase, ITodoApiController
 {
     private readonly ITodoRepository _repository;
+    private const uint PageSize = 25;
 
     public TodosController(ITodoRepository repository)
     {
-        _repository = repository;
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
     }
 
     /// <summary>
@@ -26,12 +28,15 @@ public class TodosController : ControllerBase, ITodoApiController
     /// <param name="request"></param>
     /// <returns></returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAll(FilterDTO request)
+    public async Task<ActionResult<IEnumerable<TodoItemDTO>>> GetAll(string? description, ItemStatus? status, uint? pageNumber)
     {
-        var results = await _repository.GetAll(request.Description, request.Status, request.PageNumber);
+        //var results = await _repository.GetAll(request.Description, request.Status, request.PageNumber);
+        var select = string.Empty;
+        select = select.GetQueryString(description, status, pageNumber, PageSize);
+        var results = await _repository.GetAllAsync(select);
         if (results.Any())
         {
-            return Ok(results.Select(x => x.ToDTO()));
+            return Ok(results.Select(x => x.ToDTO()).AsEnumerable());
         }
         return Ok(Enumerable.Empty<TodoItemDTO>()); 
     }
@@ -44,7 +49,7 @@ public class TodosController : ControllerBase, ITodoApiController
     [HttpGet("({id})")]
     public async Task<ActionResult<TodoItemDTO>> Get([FromRoute] Guid id)
     {
-        var todoItem = await _repository.GetById(id);
+        var todoItem = await _repository.GetByIdAsync(id.ToString());
         if (todoItem == null)
         {
             return NotFound();
@@ -58,9 +63,9 @@ public class TodosController : ControllerBase, ITodoApiController
     /// <param name="description"></param>
     /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<TodoItemDTO>> Create(string description)
+    public async Task<ActionResult<TodoItemDTO>> Create([FromRoute] string description)
     {
-        var entity = await _repository.Add(new TodoItem(description));
+        var entity = await _repository.AddAsync(new TodoItem(description));
         var dto = entity.ToDTO();
         return CreatedAtAction(nameof(Get), new { id = dto.Id }, dto);
     }
@@ -73,12 +78,13 @@ public class TodosController : ControllerBase, ITodoApiController
     [HttpPut("{id}")]
     public async Task<ActionResult<TodoItemDTO>> Update([FromRoute] Guid id, TodoItemDTO dto)
     {
-        if (id != dto.Id)
+        var entId = id.ToString();
+        if (entId != dto.Id)
         {
             return BadRequest();
         }
 
-        var itemToUpdate = _repository.GetById(id).Result;
+        var itemToUpdate = _repository.GetByIdAsync(entId).Result;
         if (itemToUpdate == null)
         {
             return NotFound();
@@ -87,15 +93,8 @@ public class TodosController : ControllerBase, ITodoApiController
         itemToUpdate.Description = dto.Description;
         itemToUpdate.Status = dto.Status;
 
-        try
-        {
-            await _repository.Update(itemToUpdate);
-        }
-        catch (DbUpdateConcurrencyException) when (!TodoItemExists(id))
-        {
-            return NotFound();
-        }
-
+        await _repository.UpdateAsync(entId, itemToUpdate);
+        
         return NoContent();
     }
 
@@ -107,22 +106,16 @@ public class TodosController : ControllerBase, ITodoApiController
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete([FromRoute] Guid id)
     {
-        var itemToDelete = _repository.GetById(id).Result;
+        var entId = id.ToString();
+        var itemToDelete = _repository.GetByIdAsync(entId).Result;
         if (itemToDelete == null)
         {
             return NotFound();
         }
 
-        await _repository.Delete(id);
+        await _repository.DeleteAsync(entId);
 
         return NoContent();
-        
-    }
-
-    private bool TodoItemExists(Guid id)
-    {
-        var result = Task.Run(async () => await _repository.IsExists(id));
-        return result.Result;
         
     }
 }

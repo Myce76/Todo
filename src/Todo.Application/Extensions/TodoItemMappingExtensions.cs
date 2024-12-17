@@ -15,7 +15,7 @@ public static class TodoItemMappingExtensions
         {
             Id = entity.Id,
             Description = entity.Description,
-            Status = entity.Status
+            Status = entity.Status,
         };
     }
 }
